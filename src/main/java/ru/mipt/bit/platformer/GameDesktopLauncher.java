@@ -44,22 +44,7 @@ public class GameDesktopLauncher implements ApplicationListener {
     public void render() {
         clean();
 
-        // get time passed since the last render
-        float deltaTime = Gdx.graphics.getDeltaTime();
-
-        isKeyPressed();
-
-        // calculate interpolated player screen coordinates
-        calculatePlayerScreenCoordinates();
-
-        player.getPlayerProperties().setObjectMovementProgress(continueProgress(
-                player.getPlayerProperties().getObjectMovementProgress(), deltaTime, MOVEMENT_SPEED));
-        if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
-            // record that the player has reached his/her destination
-            player.getPlayerProperties().getObjectCoordinates().set(
-                    player.getPlayerProperties().getObjectDestinationCoordinates()
-            );
-        }
+        movePlayer();
 
         // render each tile of the level
         map.getLevelRenderer().render();
@@ -82,7 +67,10 @@ public class GameDesktopLauncher implements ApplicationListener {
         batch.end();
     }
 
-    private void isKeyPressed() {
+    private void movePlayer() {
+        // get time passed since the last render
+        float deltaTime = Gdx.graphics.getDeltaTime();
+
         if (Gdx.input.isKeyPressed(UP) || Gdx.input.isKeyPressed(W)) {
             if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
                 // check potential player destination for collision with obstacles
@@ -117,11 +105,23 @@ public class GameDesktopLauncher implements ApplicationListener {
                 player.getPlayerProperties().setObjectRotation(0f);
             }
         }
+
+        // calculate interpolated player screen coordinates
+        calculatePlayerScreenCoordinates();
+
+        player.getPlayerProperties().setObjectMovementProgress(continueProgress(
+                player.getPlayerProperties().getObjectMovementProgress(), deltaTime, MOVEMENT_SPEED));
+        if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
+            // record that the player has reached his/her destination
+            player.getPlayerProperties().getObjectCoordinates().set(
+                    player.getPlayerProperties().getObjectDestinationCoordinates()
+            );
+        }
     }
 
     private void updateCoordinate(boolean direction, int diff) {
         if (direction)
-            player.getPlayerProperties().setObjectDestinationCoordinatesX(
+            player.getPlayerProperties().setObjectDestinationCoordinatesY(
                     player.getPlayerProperties().getObjectCoordinates().y + diff
             );
         else

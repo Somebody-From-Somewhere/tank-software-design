@@ -2,31 +2,28 @@ package ru.mipt.bit.platformer;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Rectangle;
 
-import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
+public class Player extends BaseObject {
 
-public class Player {
-
-    public Player() {}
+    public Player() {
+        super();
+    }
 
     public Player (String texturePath,
                    int playerCoordinatesX,
                    int playerCoordinatesY,
                    float playerRotation) {
-        this.blueTankTexture = new Texture(texturePath);
-        this.playerGraphics = new TextureRegion(blueTankTexture);
-        this.playerRectangle = createBoundingRectangle(playerGraphics);
+        super(texturePath);
         this.playerProperties = new MovingObjectProperties(playerCoordinatesX, playerCoordinatesY, playerRotation);
     }
 
     public void setBlueTankTexture(Texture blueTankTexture) {
-        this.blueTankTexture = blueTankTexture;
+        this.setBaseObjectTexture(blueTankTexture);
     }
 
     public void setPlayerGraphics(TextureRegion playerGraphics) {
-        this.playerGraphics = playerGraphics;
+        this.setBaseObjectGraphics(playerGraphics);
     }
 
     public void setPlayerProperties(MovingObjectProperties playerProperties) {
@@ -34,27 +31,25 @@ public class Player {
     }
 
     public void setPlayerRectangle(Rectangle playerRectangle) {
-        this.playerRectangle = playerRectangle;
+        this.setBaseObjectRectangle(playerRectangle);
     }
 
     public Texture getBlueTankTexture() {
-        return blueTankTexture;
+        return this.getBaseObjectTexture();
     }
 
     public TextureRegion getPlayerGraphics() {
-        return playerGraphics;
+        return this.getBaseObjectGraphics();
     }
 
     public Rectangle getPlayerRectangle() {
-        return playerRectangle;
+        return this.getBaseObjectRectangle();
     }
 
     public MovingObjectProperties getPlayerProperties() {
         return playerProperties;
     }
 
-    private Texture blueTankTexture;
-    private TextureRegion playerGraphics;
-    private Rectangle playerRectangle;
+//    private Rectangle playerRectangle;
     private MovingObjectProperties playerProperties;
 }

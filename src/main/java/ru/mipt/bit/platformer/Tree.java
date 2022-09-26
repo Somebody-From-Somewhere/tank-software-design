@@ -5,53 +5,49 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Rectangle;
 
-import static ru.mipt.bit.platformer.util.GdxGameUtils.createBoundingRectangle;
+public class Tree extends BaseObject {
 
-public class Tree {
-
-    public Tree() {}
+    public Tree() {
+        super();
+    }
 
     public Tree (String treePath, int x, int y) {
-        greenTreeTexture = new Texture("images/greenTree.png");
-        treeObstacleGraphics = new TextureRegion(greenTreeTexture);
-        treeObstacleCoordinates = new GridPoint2(1, 3);
-        treeObstacleRectangle = createBoundingRectangle(treeObstacleGraphics);
+        super(treePath);
+        treeObstacleCoordinates = new GridPoint2(x, y);
     }
 
     public void setGreenTreeTexture(Texture greenTreeTexture) {
-        this.greenTreeTexture = greenTreeTexture;
+        this.setBaseObjectTexture(greenTreeTexture);
+    }
+
+    public void setTreeObstacleGraphics(TextureRegion treeObstacleGraphics) {
+        this.setBaseObjectGraphics(treeObstacleGraphics);
+    }
+
+    public void setTreeObstacleRectangle(Rectangle treeObstacleRectangle) {
+        this.setBaseObjectRectangle(treeObstacleRectangle);
     }
 
     public void setTreeObstacleCoordinates(GridPoint2 treeObstacleCoordinates) {
         this.treeObstacleCoordinates = treeObstacleCoordinates;
     }
 
-    public void setTreeObstacleGraphics(TextureRegion treeObstacleGraphics) {
-        this.treeObstacleGraphics = treeObstacleGraphics;
-    }
-
-    public void setTreeObstacleRectangle(Rectangle treeObstacleRectangle) {
-        this.treeObstacleRectangle = treeObstacleRectangle;
-    }
-
     public Texture getGreenTreeTexture() {
-        return greenTreeTexture;
+        return  this.getBaseObjectTexture();
     }
 
     public TextureRegion getTreeObstacleGraphics() {
-        return treeObstacleGraphics;
-    }
-
-    public GridPoint2 getTreeObstacleCoordinates() {
-        return treeObstacleCoordinates;
+        return this.getBaseObjectGraphics();
     }
 
     public Rectangle getTreeObstacleRectangle() {
-        return treeObstacleRectangle;
+        return this.getBaseObjectRectangle();
     }
 
-    private Texture greenTreeTexture;
-    private TextureRegion treeObstacleGraphics;
+    public GridPoint2 getTreeObstacleCoordinates() {
+        return this.treeObstacleCoordinates;
+    }
+
     private GridPoint2 treeObstacleCoordinates = new GridPoint2();
-    private Rectangle treeObstacleRectangle = new Rectangle();
+
 }
