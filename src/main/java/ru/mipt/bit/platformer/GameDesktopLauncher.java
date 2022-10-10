@@ -7,9 +7,14 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+
 import static com.badlogic.gdx.Input.Keys.*;
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 import static com.badlogic.gdx.math.MathUtils.isEqual;
+import static com.badlogic.gdx.math.MathUtils.random;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 
 public class GameDesktopLauncher implements ApplicationListener {
@@ -18,10 +23,32 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     private Batch batch;
 
+    String mapPathForParser /*= "/home/dmitrii_penkin/Documents/Java/Software design/tank-software-design/src/main/resources/Map.txt"*/;
     Map map;
     Player player;
-    Tree tree;
+    ArrayList<Tree> trees = new ArrayList<>();
 
+    public void TreeGenerator(int quantity) {
+        int random_x, random_y;
+        for(int i = 0; i < quantity; i++) {
+            random_x = random(5);
+            random_y = random(5);
+            trees.add(new Tree(random_x, random_y));
+            moveRectangleAtTileCenter(map.getGroundLayer(), trees.get(i).getTreeObstacleRectangle(), trees.get(i).getTreeObstacleCoordinates());
+        }
+    }
+
+    public void drawTreesTextureRegionUnscaled(Batch batch) {
+        for (Tree tree : trees) {
+            drawTextureRegionUnscaled(batch, tree.getTreeObstacleGraphics(), tree.getTreeObstacleRectangle(), 0f);
+        }
+    }
+
+    public void TreesDispose(ArrayList<Tree> trees) {
+        for(Tree tree : trees) {
+            tree.getGreenTreeTexture().dispose();
+        }
+    }
 
     @Override
     public void create() {
@@ -30,9 +57,16 @@ public class GameDesktopLauncher implements ApplicationListener {
         // load level tiles
 
         map = new Map("level.tmx", batch);
-        player = new Player("images/tank_blue.png", 1, 1, 0f);
-        tree = new Tree("images/greenTree.png", 1, 3);
-        moveRectangleAtTileCenter(map.getGroundLayer(), tree.getTreeObstacleRectangle(), tree.getTreeObstacleCoordinates());
+        if (mapPathForParser == null) {
+            player = new Player();
+            TreeGenerator(5);
+        } else {
+            try {
+                parser(mapPathForParser);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public void clean() {
@@ -61,7 +95,8 @@ public class GameDesktopLauncher implements ApplicationListener {
         );
 
         // render tree obstacle
-        drawTextureRegionUnscaled(batch, tree.getTreeObstacleGraphics(), tree.getTreeObstacleRectangle(), 0f);
+        drawTreesTextureRegionUnscaled(batch);
+
 
         // submit all drawing requests
         batch.end();
@@ -132,16 +167,19 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     private boolean isThereCollision(boolean direction, boolean sign) {
-        if (direction)
-            if (sign)
-                return !tree.getTreeObstacleCoordinates().equals(incrementedY(player.getPlayerProperties().getObjectCoordinates()));
+        boolean isThereCollision = true;
+        for (int i = 0; i < trees.size() && isThereCollision; i++) {
+            if (direction)
+                if (sign)
+                    isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(incrementedY(player.getPlayerProperties().getObjectCoordinates()));
+                else
+                    isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(decrementedY(player.getPlayerProperties().getObjectCoordinates()));
+            else if (sign)
+                isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(incrementedX(player.getPlayerProperties().getObjectCoordinates()));
             else
-                return !tree.getTreeObstacleCoordinates().equals(decrementedY(player.getPlayerProperties().getObjectCoordinates()));
-        else
-            if (sign)
-                return !tree.getTreeObstacleCoordinates().equals(incrementedX(player.getPlayerProperties().getObjectCoordinates()));
-            else
-                return !tree.getTreeObstacleCoordinates().equals(decrementedX(player.getPlayerProperties().getObjectCoordinates()));
+                isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(decrementedX(player.getPlayerProperties().getObjectCoordinates()));
+        }
+        return isThereCollision;
     }
 
     private void calculatePlayerScreenCoordinates() {
@@ -170,10 +208,32 @@ public class GameDesktopLauncher implements ApplicationListener {
     @Override
     public void dispose() {
         // dispose of all the native resources (classes which implement com.badlogic.gdx.utils.Disposable)
-        tree.getGreenTreeTexture().dispose();
+        TreesDispose(trees);
         player.getBlueTankTexture().dispose();
         map.getLevel().dispose();
         batch.dispose();
+    }
+
+    public void parser(String filePath) throws IOException {
+        File file = new File(filePath);
+        Scanner scanner = new Scanner(file);
+        ArrayList<String> charMap= new ArrayList<>();
+        int treeCounter = 0;
+        while (scanner.hasNext()) {
+            charMap.add(scanner.nextLine());
+        }
+        for(int i = charMap.size() - 1; i >= 0; i--) {
+            for (int j = 0; j < charMap.get(i).length(); j++) {
+                if (charMap.get(i).charAt(j) == 'X') {
+                    player = new Player(j, charMap.size() - i - 1);
+                }
+                if (charMap.get(i).charAt(j) == 'T') {
+                    trees.add(new Tree(j, charMap.size() - i - 1));
+                    moveRectangleAtTileCenter(map.getGroundLayer(), trees.get(treeCounter).getTreeObstacleRectangle(), trees.get(treeCounter).getTreeObstacleCoordinates());
+                    treeCounter++;
+                }
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -182,4 +242,5 @@ public class GameDesktopLauncher implements ApplicationListener {
         config.setWindowedMode(1280, 1024);
         new Lwjgl3Application(new GameDesktopLauncher(), config);
     }
+
 }

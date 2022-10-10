@@ -6,16 +6,14 @@ import com.badlogic.gdx.math.Rectangle;
 
 public class Player extends BaseObject {
 
-    public Player() {
-        super();
+    public Player () {
+        super("images/tank_blue.png");
+        this.playerProperties = new MovingObjectProperties();
     }
 
-    public Player (String texturePath,
-                   int playerCoordinatesX,
-                   int playerCoordinatesY,
-                   float playerRotation) {
-        super(texturePath);
-        this.playerProperties = new MovingObjectProperties(playerCoordinatesX, playerCoordinatesY, playerRotation);
+    public Player (int x, int y) {
+        super("images/tank_blue.png");
+        this.playerProperties = new MovingObjectProperties(x, y);
     }
 
     public void setBlueTankTexture(Texture blueTankTexture) {

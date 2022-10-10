@@ -2,16 +2,24 @@ package ru.mipt.bit.platformer;
 
 import com.badlogic.gdx.math.GridPoint2;
 
+import static com.badlogic.gdx.math.MathUtils.random;
+
 public class MovingObjectProperties {
 
-    public MovingObjectProperties() {}
+    public MovingObjectProperties() {
+        GenerateRandomCoordinates();
+    }
 
-    public MovingObjectProperties(int objectCoordinatesX,
-                                  int objectCoordinatesY,
-                                  float objectRotation) {
-        this.objectDestinationCoordinates = new GridPoint2(objectCoordinatesX, objectCoordinatesY);
+    public MovingObjectProperties(int x, int y) {
+        this.objectDestinationCoordinates = new GridPoint2(x, y);
         this.objectCoordinates = new GridPoint2(objectDestinationCoordinates);
-        this.objectRotation = objectRotation;
+        this.objectRotation = 0f;
+    }
+
+    private void GenerateRandomCoordinates() {
+        this.objectDestinationCoordinates = new GridPoint2(random(7), random(7));
+        this.objectCoordinates = new GridPoint2(objectDestinationCoordinates);
+        this.objectRotation = 0f;
     }
 
     public void setObjectCoordinates(GridPoint2 objectCoordinates) {

@@ -11,8 +11,8 @@ public class Tree extends BaseObject {
         super();
     }
 
-    public Tree (String treePath, int x, int y) {
-        super(treePath);
+    public Tree (int x, int y) {
+        super("images/greenTree.png");
         treeObstacleCoordinates = new GridPoint2(x, y);
     }
 
