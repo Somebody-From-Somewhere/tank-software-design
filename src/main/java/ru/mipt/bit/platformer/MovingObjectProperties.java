@@ -1,25 +1,34 @@
 package ru.mipt.bit.platformer;
 
 import com.badlogic.gdx.math.GridPoint2;
-
 import static com.badlogic.gdx.math.MathUtils.random;
 
 public class MovingObjectProperties {
 
     public MovingObjectProperties() {
-        GenerateRandomCoordinates();
+        this.objectDestinationCoordinates = createMovingObjectWithRandomCoordinates();
+        this.objectCoordinates = new GridPoint2(objectDestinationCoordinates);
+        this.objectRotation = randomRotation();
     }
 
     public MovingObjectProperties(int x, int y) {
         this.objectDestinationCoordinates = new GridPoint2(x, y);
         this.objectCoordinates = new GridPoint2(objectDestinationCoordinates);
-        this.objectRotation = 0f;
+        this.objectRotation = randomRotation();
     }
 
-    private void GenerateRandomCoordinates() {
-        this.objectDestinationCoordinates = new GridPoint2(random(7), random(7));
-        this.objectCoordinates = new GridPoint2(objectDestinationCoordinates);
-        this.objectRotation = 0f;
+    private GridPoint2 createMovingObjectWithRandomCoordinates() {
+        return new GridPoint2(random(9), random(7));
+
+    }
+
+    private Rotation randomRotation() {
+        int i = random(4);
+        Rotation randomRotation = Rotation.DOWN;
+        if(i == 1) {randomRotation = Rotation.RIGHT;}
+        if(i == 2) {randomRotation = Rotation.LEFT;}
+        if(i == 3) {randomRotation = Rotation.UP;}
+        return randomRotation;
     }
 
     public void setObjectCoordinates(GridPoint2 objectCoordinates) {
@@ -50,17 +59,17 @@ public class MovingObjectProperties {
         return objectMovementProgress;
     }
 
-    public void setObjectRotation(float objectRotation) {
-        this.objectRotation = objectRotation;
+    public void setObjectRotation(Rotation rotation) {
+        this.objectRotation = rotation;
     }
 
-    public float getObjectRotation() {
+    public Rotation getObjectRotation() {
         return objectRotation;
     }
 
-    private GridPoint2 objectCoordinates;           // which tile the player want to go next
+    private GridPoint2 objectCoordinates;           // which tile the object want to go next
     private GridPoint2 objectDestinationCoordinates;
     private float objectMovementProgress = 1f;
-    private float objectRotation;
+    private Rotation objectRotation;
 
 }

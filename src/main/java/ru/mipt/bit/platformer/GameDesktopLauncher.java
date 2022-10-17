@@ -6,6 +6,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.GridPoint2;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -27,26 +28,54 @@ public class GameDesktopLauncher implements ApplicationListener {
     Map map;
     Player player;
     ArrayList<Tree> trees = new ArrayList<>();
+    ArrayList<Bot> bots = new ArrayList<>();
 
-    public void TreeGenerator(int quantity) {
+    private void treeGenerator(int treeQuantity) {
         int random_x, random_y;
-        for(int i = 0; i < quantity; i++) {
-            random_x = random(5);
-            random_y = random(5);
+        for(int i = 0; i < treeQuantity; i++) {
+            random_x = random(9);
+            random_y = random(7);
             trees.add(new Tree(random_x, random_y));
             moveRectangleAtTileCenter(map.getGroundLayer(), trees.get(i).getTreeObstacleRectangle(), trees.get(i).getTreeObstacleCoordinates());
         }
     }
 
-    public void drawTreesTextureRegionUnscaled(Batch batch) {
-        for (Tree tree : trees) {
+    private void drawTreesTextureRegionUnscaled() {
+        for(Tree tree : trees) {
             drawTextureRegionUnscaled(batch, tree.getTreeObstacleGraphics(), tree.getTreeObstacleRectangle(), 0f);
         }
     }
 
-    public void TreesDispose(ArrayList<Tree> trees) {
+    private void treesDispose() {
         for(Tree tree : trees) {
             tree.getGreenTreeTexture().dispose();
+        }
+    }
+
+    private void botGenerator(int bot_quantity) {
+        for(int i = 0; i < bot_quantity; i++) {
+            bots.add(new Bot());
+            moveRectangleAtTileCenter(
+                    map.getGroundLayer(),
+                    bots.get(i).getBaseObjectRectangle(),
+                    bots.get(i).getBotProperties().getObjectCoordinates());
+        }
+    }
+
+    private void drawBotTextureRegionUnscaled() {
+        for(Bot bot : bots) {
+            drawTextureRegionUnscaled(
+                    batch,
+                    bot.getBaseObjectGraphics(),
+                    bot.getBaseObjectRectangle(),
+                    bot.getBotProperties().getObjectRotation().getFloatRotation()
+            );
+        }
+    }
+
+    private void botsDispose() {
+        for(Bot bot : bots) {
+            bot.getBaseObjectTexture().dispose();
         }
     }
 
@@ -59,7 +88,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         map = new Map("level.tmx", batch);
         if (mapPathForParser == null) {
             player = new Player();
-            TreeGenerator(5);
+            treeGenerator(random(10) + 1);
         } else {
             try {
                 parser(mapPathForParser);
@@ -67,6 +96,8 @@ public class GameDesktopLauncher implements ApplicationListener {
                 throw new RuntimeException(e);
             }
         }
+        botGenerator(random(15) + 1);
+
     }
 
     public void clean() {
@@ -78,7 +109,10 @@ public class GameDesktopLauncher implements ApplicationListener {
     public void render() {
         clean();
 
+        moveBot();
         movePlayer();
+
+
 
         // render each tile of the level
         map.getLevelRenderer().render();
@@ -91,54 +125,90 @@ public class GameDesktopLauncher implements ApplicationListener {
                 batch,
                 player.getPlayerGraphics(),
                 player.getPlayerRectangle(),
-                player.getPlayerProperties().getObjectRotation()
+                player.getPlayerProperties().getObjectRotation().getFloatRotation()
         );
 
+        // render bots obstacles
+        drawBotTextureRegionUnscaled();
+
         // render tree obstacle
-        drawTreesTextureRegionUnscaled(batch);
+        drawTreesTextureRegionUnscaled();
 
 
         // submit all drawing requests
         batch.end();
     }
 
+    private void moveBot() {
+        for (Bot bot : bots) {
+            float deltaTime = Gdx.graphics.getDeltaTime();
+            int i = random(4);
+            MovementDirection direction = MovementDirection.NONE;
+            Rotation rotation = bot.getBotProperties().getObjectRotation();
+            if(i == 1) {
+                direction = MovementDirection.RIGHT;
+                rotation = Rotation.RIGHT;
+            }
+            if(i == 2) {
+                direction = MovementDirection.LEFT;
+                rotation = Rotation.LEFT;
+            }
+            if(i == 3) {
+                direction = MovementDirection.UP;
+                rotation = Rotation.UP;
+            }
+            if(i == 4) {
+                direction = MovementDirection.DOWN;
+                rotation = Rotation.DOWN;
+            }
+            if (isEqual(bot.getBotProperties().getObjectMovementProgress(), 1f)) {
+                if (isThereBotCollision(bot, direction)) {
+                    updateBotCoordinate(bot, direction);
+                }
+                bot.getBotProperties().setObjectRotation(rotation);
+            }
+            calculateBotScreenCoordinates(bot);
+            bot.getBotProperties().setObjectMovementProgress(continueProgress(
+                    bot.getBotProperties().getObjectMovementProgress(), deltaTime, MOVEMENT_SPEED));
+            if (isEqual(bot.getBotProperties().getObjectMovementProgress(), 1f)) {
+                // record that the bot has reached his/her destination
+                bot.getBotProperties().getObjectCoordinates().set(
+                        bot.getBotProperties().getObjectDestinationCoordinates()
+                );
+            }
+        }
+
+
+    }
+
     private void movePlayer() {
         // get time passed since the last render
         float deltaTime = Gdx.graphics.getDeltaTime();
+        MovementDirection direction = MovementDirection.NONE;
+        Rotation rotation = player.getPlayerProperties().getObjectRotation();
 
         if (Gdx.input.isKeyPressed(UP) || Gdx.input.isKeyPressed(W)) {
-            if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
-                // check potential player destination for collision with obstacles
-                if (isThereCollision(true, true)) {
-                    updateCoordinate(true, 1);
-                }
-                player.getPlayerProperties().setObjectRotation(90f);
-            }
+            direction = MovementDirection.UP;
+            rotation = Rotation.UP;
         }
         if (Gdx.input.isKeyPressed(LEFT) || Gdx.input.isKeyPressed(A)) {
-            if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
-                if (isThereCollision(false, false)) {
-                    updateCoordinate(false, -1);
-                }
-                player.getPlayerProperties().setObjectRotation(-180f);
-            }
+            direction = MovementDirection.LEFT;
+            rotation = Rotation.LEFT;
         }
         if (Gdx.input.isKeyPressed(DOWN) || Gdx.input.isKeyPressed(S)) {
-            if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
-                if (isThereCollision(true, false)) {
-                    updateCoordinate(true, -1);
-                }
-                player.getPlayerProperties().setObjectRotation(-90f);
-            }
+            direction = MovementDirection.DOWN;
+            rotation = Rotation.DOWN;
         }
         if (Gdx.input.isKeyPressed(RIGHT) || Gdx.input.isKeyPressed(D)) {
-            if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
-                if (isThereCollision(false, true)) {
-                    updateCoordinate(false, 1);
+            direction = MovementDirection.RIGHT;
+            rotation = Rotation.RIGHT;
+        }
 
-                }
-                player.getPlayerProperties().setObjectRotation(0f);
+        if (isEqual(player.getPlayerProperties().getObjectMovementProgress(), 1f)) {
+            if (isThereCollision(direction)) {
+                updatePlayerCoordinate(direction);
             }
+            player.getPlayerProperties().setObjectRotation(rotation);
         }
 
         // calculate interpolated player screen coordinates
@@ -154,32 +224,72 @@ public class GameDesktopLauncher implements ApplicationListener {
         }
     }
 
-    private void updateCoordinate(boolean direction, int diff) {
-        if (direction)
-            player.getPlayerProperties().setObjectDestinationCoordinatesY(
-                    player.getPlayerProperties().getObjectCoordinates().y + diff
-            );
-        else
-            player.getPlayerProperties().setObjectDestinationCoordinatesX(
-                    player.getPlayerProperties().getObjectCoordinates().x + diff
-            );
+    private void updatePlayerCoordinate(MovementDirection movementDirection) {
+        player.getPlayerProperties().setObjectDestinationCoordinatesY(
+                player.getPlayerProperties().getObjectCoordinates().y + movementDirection.getY());
+        player.getPlayerProperties().setObjectDestinationCoordinatesX(
+                player.getPlayerProperties().getObjectCoordinates().x + movementDirection.getX());
         player.getPlayerProperties().setObjectMovementProgress(0f);
     }
 
-    private boolean isThereCollision(boolean direction, boolean sign) {
+    private void updateBotCoordinate(Bot bot, MovementDirection movementDirection) {
+        bot.getBotProperties().setObjectDestinationCoordinatesY(
+                bot.getBotProperties().getObjectCoordinates().y + movementDirection.getY());
+        bot.getBotProperties().setObjectDestinationCoordinatesX(
+                bot.getBotProperties().getObjectCoordinates().x + movementDirection.getX());
+        bot.getBotProperties().setObjectMovementProgress(0f);
+    }
+
+    private boolean isOnScreen(GridPoint2 newCoordinates) {
+        return newCoordinates.x >= 0 && newCoordinates.x <= 9 &&
+                newCoordinates.y >= 0 && newCoordinates.y <= 7;
+    }
+
+    private boolean isThereCollision(MovementDirection direction) {
         boolean isThereCollision = true;
+        GridPoint2 newPlayerCoordinates = player.getPlayerProperties().getObjectCoordinates();
+        if (direction == MovementDirection.UP)
+            newPlayerCoordinates = incrementedY(player.getPlayerProperties().getObjectCoordinates());
+        if (direction == MovementDirection.DOWN)
+            newPlayerCoordinates = decrementedY(player.getPlayerProperties().getObjectCoordinates());
+        if (direction == MovementDirection.RIGHT)
+            newPlayerCoordinates = incrementedX(player.getPlayerProperties().getObjectCoordinates());
+        if (direction == MovementDirection.LEFT)
+            newPlayerCoordinates = decrementedX(player.getPlayerProperties().getObjectCoordinates());
         for (int i = 0; i < trees.size() && isThereCollision; i++) {
-            if (direction)
-                if (sign)
-                    isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(incrementedY(player.getPlayerProperties().getObjectCoordinates()));
-                else
-                    isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(decrementedY(player.getPlayerProperties().getObjectCoordinates()));
-            else if (sign)
-                isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(incrementedX(player.getPlayerProperties().getObjectCoordinates()));
-            else
-                isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(decrementedX(player.getPlayerProperties().getObjectCoordinates()));
+            isThereCollision = !trees.get(i).getTreeObstacleCoordinates().equals(newPlayerCoordinates);
         }
-        return isThereCollision;
+        for(int i = 0; i < bots.size() && isThereCollision; i++) {
+            isThereCollision = !bots.get(i).getBotProperties().getObjectCoordinates().equals(newPlayerCoordinates) &&
+                    !bots.get(i).getBotProperties().getObjectDestinationCoordinates().equals(newPlayerCoordinates);
+        }
+
+        return isThereCollision && isOnScreen(newPlayerCoordinates);
+    }
+
+    private boolean isThereBotCollision(Bot bot, MovementDirection direction) {
+        boolean isThereBotCollision;
+        GridPoint2 newBotCoordinates = bot.getBotProperties().getObjectCoordinates();
+        if (direction == MovementDirection.UP)
+            newBotCoordinates = incrementedY(bot.getBotProperties().getObjectCoordinates());
+        if (direction == MovementDirection.DOWN)
+            newBotCoordinates = decrementedY(bot.getBotProperties().getObjectCoordinates());
+        if (direction == MovementDirection.RIGHT)
+            newBotCoordinates = incrementedX(bot.getBotProperties().getObjectCoordinates());
+        if (direction == MovementDirection.LEFT)
+            newBotCoordinates = decrementedX(bot.getBotProperties().getObjectCoordinates());
+
+        isThereBotCollision = !player.getPlayerProperties().getObjectCoordinates().equals(newBotCoordinates) &&
+                !player.getPlayerProperties().getObjectDestinationCoordinates().equals(newBotCoordinates);
+        for (int i = 0; i < trees.size() && isThereBotCollision; i++) {
+            isThereBotCollision = !trees.get(i).getTreeObstacleCoordinates().equals(newBotCoordinates);
+        }
+        for(int i = 0; i < bots.size() && isThereBotCollision; i++) {
+            isThereBotCollision = !bots.get(i).getBotProperties().getObjectCoordinates().equals(newBotCoordinates)&&
+                    !bots.get(i).getBotProperties().getObjectDestinationCoordinates().equals(newBotCoordinates);
+        }
+
+        return isThereBotCollision && isOnScreen(newBotCoordinates);
     }
 
     private void calculatePlayerScreenCoordinates() {
@@ -188,6 +298,14 @@ public class GameDesktopLauncher implements ApplicationListener {
                 player.getPlayerProperties().getObjectCoordinates(),
                 player.getPlayerProperties().getObjectDestinationCoordinates(),
                 player.getPlayerProperties().getObjectMovementProgress());
+    }
+
+    private void calculateBotScreenCoordinates(Bot bot) {
+        map.getTileMovement().moveRectangleBetweenTileCenters(
+                bot.getBaseObjectRectangle(),
+                bot.getBotProperties().getObjectCoordinates(),
+                bot.getBotProperties().getObjectDestinationCoordinates(),
+                bot.getBotProperties().getObjectMovementProgress());
     }
 
     @Override
@@ -208,7 +326,8 @@ public class GameDesktopLauncher implements ApplicationListener {
     @Override
     public void dispose() {
         // dispose of all the native resources (classes which implement com.badlogic.gdx.utils.Disposable)
-        TreesDispose(trees);
+        treesDispose();
+        botsDispose();
         player.getBlueTankTexture().dispose();
         map.getLevel().dispose();
         batch.dispose();
